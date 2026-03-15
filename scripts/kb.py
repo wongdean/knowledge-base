@@ -4,6 +4,7 @@ import datetime as dt
 import hashlib
 import json
 import re
+import sqlite3
 import sys
 import urllib.parse
 import urllib.request
@@ -11,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "manifest.jsonl"
+FTS_DB = ROOT / "indexes" / "kb_fts.db"
 
 
 def iter_items():
@@ -22,6 +24,27 @@ def iter_items():
             if not line:
                 continue
             yield json.loads(line)
+
+
+def normalize_url(url: str) -> str:
+    p = urllib.parse.urlparse(url.strip())
+    scheme = p.scheme or "https"
+    netloc = p.netloc.lower()
+    path = re.sub(r"/+", "/", p.path or "/")
+
+    q = urllib.parse.parse_qsl(p.query, keep_blank_values=False)
+    drop = {"utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "spm", "igshid"}
+    q = [(k, v) for k, v in q if k.lower() not in drop]
+
+    # X/Twitter canonicalization: keep status/article ID only
+    if "x.com" in netloc or "twitter.com" in netloc:
+        m = re.search(r"/(status|article)/(\d+)", path)
+        if m:
+            path = path[: m.end()]
+            q = []
+
+    query = urllib.parse.urlencode(sorted(q)) if q else ""
+    return urllib.parse.urlunparse((scheme, netloc, path.rstrip("/"), "", query, ""))
 
 
 def search(q=None, tag=None):
@@ -50,7 +73,7 @@ def search(q=None, tag=None):
 def _fetch_via_jina(url: str) -> str:
     target = "https://r.jina.ai/http://" + url.replace("https://", "").replace("http://", "")
     req = urllib.request.Request(target, headers={"User-Agent": "kb-bot/1.0"})
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=90) as r:
         return r.read().decode("utf-8", errors="ignore")
 
 
@@ -63,24 +86,19 @@ def _guess_source(url: str) -> str:
 
 def _extract_title(text: str, fallback: str) -> str:
     m = re.search(r"^Title:\s*(.+)$", text, re.MULTILINE)
-    if m:
-        return m.group(1).strip()
-    return fallback
+    return m.group(1).strip() if m else fallback
 
 
 def _extract_body(text: str) -> str:
     m = re.search(r"Markdown Content:\n(.*)$", text, re.DOTALL)
-    body = m.group(1).strip() if m else text.strip()
-    return body
+    return (m.group(1).strip() if m else text.strip())
 
 
 def _summarize(body: str, max_len: int = 320) -> str:
     clean = re.sub(r"\s+", " ", body)
     parts = re.split(r"(?<=[。！？.!?])\s+", clean)
     summary = " ".join(parts[:3]).strip()
-    if len(summary) > max_len:
-        summary = summary[: max_len - 1] + "…"
-    return summary
+    return (summary[: max_len - 1] + "…") if len(summary) > max_len else summary
 
 
 def _auto_tags(title: str, body: str, source: str):
@@ -106,9 +124,7 @@ def _auto_tags(title: str, body: str, source: str):
     if any(k in text for k in ["all in", "特斯拉", "夸张", "爆赚"]):
         add("高风险宣传")
 
-    if not tags:
-        tags = ["待分类"]
-    return tags
+    return tags or ["待分类"]
 
 
 def _slug(s: str, n: int = 48):
@@ -119,21 +135,37 @@ def _slug(s: str, n: int = 48):
     return s[:n] if s else "entry"
 
 
-def _load_manifest_ids():
-    ids = set()
+def _load_manifest_state():
+    ids, urls = set(), set()
     for it in iter_items() or []:
         if it.get("id"):
             ids.add(it["id"])
-    return ids
+        if it.get("normalized_url"):
+            urls.add(it["normalized_url"])
+        elif it.get("url"):
+            urls.add(normalize_url(it["url"]))
+    return ids, urls
 
 
 def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
     now = dt.datetime.now(dt.timezone(dt.timedelta(hours=8)))
     source = _guess_source(url)
+    nurl = normalize_url(url)
 
-    raw = _fetch_via_jina(url)
+    ids, urls = _load_manifest_state()
+    h = hashlib.sha1(nurl.encode("utf-8")).hexdigest()[:12]
+    item_id = f"{source}-{h}"
+
+    if item_id in ids:
+        print(f"already exists: {item_id}")
+        return False
+    if nurl in urls:
+        print(f"already exists by URL: {nurl}")
+        return False
+
+    raw = _fetch_via_jina(nurl)
     body = _extract_body(raw)
-    title = title_arg.strip() or _extract_title(raw, fallback=url)
+    title = title_arg.strip() or _extract_title(raw, fallback=nurl)
     summary = _summarize(body)
 
     auto_tags = _auto_tags(title, body, source)
@@ -143,13 +175,6 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
         if t not in tags:
             tags.append(t)
 
-    h = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
-    item_id = f"{source}-{h}"
-
-    if item_id in _load_manifest_ids():
-        print(f"already exists: {item_id}")
-        return
-
     day = now.strftime("%Y-%m-%d")
     dir_name = f"{day}-{_slug(title)}-{h}"
     entry_dir = ROOT / "sources" / source / dir_name
@@ -157,7 +182,7 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
 
     (entry_dir / "article.md").write_text(
         f"# {title}\n\n"
-        f"- Source: {url}\n"
+        f"- Source: {nurl}\n"
         f"- Captured at: {now.isoformat()}\n\n"
         f"## Content\n\n{body}\n",
         encoding="utf-8",
@@ -165,17 +190,7 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
     (entry_dir / "raw.txt").write_text(raw, encoding="utf-8")
     (entry_dir / "summary.md").write_text(f"# 摘要\n\n{summary}\n", encoding="utf-8")
     (entry_dir / "tags.json").write_text(
-        json.dumps(
-            {
-                "url": url,
-                "title": title,
-                "tags": tags,
-                "source": source,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
+        json.dumps({"url": nurl, "title": title, "tags": tags, "source": source}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
 
@@ -183,7 +198,8 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
         "id": item_id,
         "source": source,
         "title": title,
-        "url": url,
+        "url": nurl,
+        "normalized_url": nurl,
         "captured_at": now.isoformat(),
         "tags": tags,
         "summary": summary,
@@ -195,6 +211,88 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
     print(f"added: {item_id}")
     print(f"path: {entry_dir}")
     print(f"tags: {', '.join(tags)}")
+    return True
+
+
+def add_from_file(file_path: str, tags_arg: str = ""):
+    p = Path(file_path)
+    if not p.exists():
+        raise FileNotFoundError(file_path)
+    urls = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        urls.append(line)
+
+    ok, skip, fail = 0, 0, 0
+    for u in urls:
+        try:
+            created = add_url(u, tags_arg=tags_arg)
+            if created:
+                ok += 1
+            else:
+                skip += 1
+        except Exception as e:
+            fail += 1
+            print(f"failed: {u} -> {e}")
+
+    print(f"batch done: added={ok}, skipped={skip}, failed={fail}")
+
+
+def rebuild_fts():
+    FTS_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(FTS_DB)
+    cur = conn.cursor()
+    cur.execute("DROP TABLE IF EXISTS docs")
+    cur.execute("CREATE VIRTUAL TABLE docs USING fts5(id, title, summary, tags, url, path, content)")
+
+    count = 0
+    for it in iter_items() or []:
+        content = ""
+        rel = it.get("path")
+        if rel:
+            p = ROOT / rel
+            if p.exists():
+                content = p.read_text(encoding="utf-8", errors="ignore")
+        cur.execute(
+            "INSERT INTO docs(id, title, summary, tags, url, path, content) VALUES(?,?,?,?,?,?,?)",
+            (
+                it.get("id", ""),
+                it.get("title", ""),
+                it.get("summary", ""),
+                " ".join(it.get("tags", [])),
+                it.get("url", ""),
+                it.get("path", ""),
+                content,
+            ),
+        )
+        count += 1
+
+    conn.commit()
+    conn.close()
+    print(f"fts rebuilt: {count} docs -> {FTS_DB}")
+
+
+def search_fts(query: str, limit: int = 20):
+    if not FTS_DB.exists():
+        print("fts db not found, run: python3 scripts/kb.py rebuild-fts")
+        return
+    conn = sqlite3.connect(FTS_DB)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, title, url, tags, path FROM docs WHERE docs MATCH ? LIMIT ?",
+        (query, limit),
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    if not rows:
+        print("no results")
+        return
+
+    for r in rows:
+        print(f"- [{r[0]}] {r[1]}\n  url: {r[2]}\n  tags: {r[3]}\n  path: {r[4]}\n")
 
 
 def main():
@@ -210,11 +308,27 @@ def main():
     a.add_argument("--tags", default="", help="extra tags, comma-separated")
     a.add_argument("--title", default="", help="override title")
 
+    b = sub.add_parser("add-batch", help="Add URLs from file (one URL per line)")
+    b.add_argument("file")
+    b.add_argument("--tags", default="", help="extra tags for all URLs")
+
+    rf = sub.add_parser("rebuild-fts", help="Build/rebuild SQLite FTS index")
+
+    sf = sub.add_parser("search-fts", help="Full-text search via SQLite FTS5")
+    sf.add_argument("query")
+    sf.add_argument("--limit", type=int, default=20)
+
     args = p.parse_args()
     if args.cmd == "search":
         search(args.query, args.tag or None)
     elif args.cmd == "add":
         add_url(args.url, tags_arg=args.tags, title_arg=args.title)
+    elif args.cmd == "add-batch":
+        add_from_file(args.file, tags_arg=args.tags)
+    elif args.cmd == "rebuild-fts":
+        rebuild_fts()
+    elif args.cmd == "search-fts":
+        search_fts(args.query, args.limit)
 
 
 if __name__ == "__main__":
