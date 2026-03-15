@@ -1,0 +1,1 @@
+30 4 * * * mkdir -p /tmp/openclaw && flock -n /tmp/openclaw/gateway-restart.lock /bin/sh -lc 'pkill -x openclaw-gateway 2>/dev/null || true; pkill -x openclaw 2>/dev/null || true; sleep 2; exec nohup /home/coco/.npm-global/bin/openclaw gateway --force >> /tmp/openclaw/gateway-restart-cron.log 2>&1 </dev/null &'
