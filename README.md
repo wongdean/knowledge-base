@@ -15,6 +15,13 @@
 
 ## 快速用法
 ```bash
+# 入库（自动抓取 + 自动摘要 + 自动标签）
+python3 scripts/kb.py add "https://x.com/xxx/status/123"
+
+# 可追加你自己的标签
+python3 scripts/kb.py add "https://example.com/article" --tags "行业洞察,竞品"
+
+# 检索
 python3 scripts/kb.py search "OpenClaw"
 python3 scripts/kb.py search --tag "Agent编排"
 ```

@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
-import argparse, json
+import argparse
+import datetime as dt
+import hashlib
+import json
+import re
+import sys
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "manifest.jsonl"
+
 
 def iter_items():
     if not MANIFEST.exists():
@@ -15,32 +23,203 @@ def iter_items():
                 continue
             yield json.loads(line)
 
+
 def search(q=None, tag=None):
     q = (q or "").lower()
     for it in iter_items() or []:
-        hay = " ".join([
-            it.get("title", ""),
-            it.get("summary", ""),
-            " ".join(it.get("tags", [])),
-            it.get("url", ""),
-        ]).lower()
+        hay = " ".join(
+            [
+                it.get("title", ""),
+                it.get("summary", ""),
+                " ".join(it.get("tags", [])),
+                it.get("url", ""),
+            ]
+        ).lower()
         if tag and tag not in it.get("tags", []):
             continue
         if q and q not in hay:
             continue
-        print(f"- [{it.get('id')}] {it.get('title')}\n  url: {it.get('url')}\n  tags: {', '.join(it.get('tags', []))}\n  path: {it.get('path')}\n")
+        print(
+            f"- [{it.get('id')}] {it.get('title')}\n"
+            f"  url: {it.get('url')}\n"
+            f"  tags: {', '.join(it.get('tags', []))}\n"
+            f"  path: {it.get('path')}\n"
+        )
+
+
+def _fetch_via_jina(url: str) -> str:
+    target = "https://r.jina.ai/http://" + url.replace("https://", "").replace("http://", "")
+    req = urllib.request.Request(target, headers={"User-Agent": "kb-bot/1.0"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read().decode("utf-8", errors="ignore")
+
+
+def _guess_source(url: str) -> str:
+    netloc = urllib.parse.urlparse(url).netloc.lower()
+    if "x.com" in netloc or "twitter.com" in netloc:
+        return "x"
+    return "web"
+
+
+def _extract_title(text: str, fallback: str) -> str:
+    m = re.search(r"^Title:\s*(.+)$", text, re.MULTILINE)
+    if m:
+        return m.group(1).strip()
+    return fallback
+
+
+def _extract_body(text: str) -> str:
+    m = re.search(r"Markdown Content:\n(.*)$", text, re.DOTALL)
+    body = m.group(1).strip() if m else text.strip()
+    return body
+
+
+def _summarize(body: str, max_len: int = 320) -> str:
+    clean = re.sub(r"\s+", " ", body)
+    parts = re.split(r"(?<=[。！？.!?])\s+", clean)
+    summary = " ".join(parts[:3]).strip()
+    if len(summary) > max_len:
+        summary = summary[: max_len - 1] + "…"
+    return summary
+
+
+def _auto_tags(title: str, body: str, source: str):
+    text = f"{title}\n{body}".lower()
+    tags = []
+
+    def add(t):
+        if t not in tags:
+            tags.append(t)
+
+    if source == "x":
+        add("X")
+    if "openclaw" in text:
+        add("OpenClaw")
+    if any(k in text for k in ["agent", "编排", "workflow", "自动化"]):
+        add("Agent编排")
+    if any(k in text for k in ["变现", "赚钱", "收入", "报价", "客户", "接单"]):
+        add("AI变现")
+    if any(k in text for k in ["小红书", "获客", "增长", "咨询"]):
+        add("内容获客")
+    if any(k in text for k in ["复盘", "总结", "经验"]):
+        add("案例复盘")
+    if any(k in text for k in ["all in", "特斯拉", "夸张", "爆赚"]):
+        add("高风险宣传")
+
+    if not tags:
+        tags = ["待分类"]
+    return tags
+
+
+def _slug(s: str, n: int = 48):
+    s = s.lower()
+    s = re.sub(r"https?://", "", s)
+    s = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", s)
+    s = s.strip("-")
+    return s[:n] if s else "entry"
+
+
+def _load_manifest_ids():
+    ids = set()
+    for it in iter_items() or []:
+        if it.get("id"):
+            ids.add(it["id"])
+    return ids
+
+
+def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
+    now = dt.datetime.now(dt.timezone(dt.timedelta(hours=8)))
+    source = _guess_source(url)
+
+    raw = _fetch_via_jina(url)
+    body = _extract_body(raw)
+    title = title_arg.strip() or _extract_title(raw, fallback=url)
+    summary = _summarize(body)
+
+    auto_tags = _auto_tags(title, body, source)
+    manual_tags = [t.strip() for t in tags_arg.split(",") if t.strip()]
+    tags = []
+    for t in auto_tags + manual_tags:
+        if t not in tags:
+            tags.append(t)
+
+    h = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
+    item_id = f"{source}-{h}"
+
+    if item_id in _load_manifest_ids():
+        print(f"already exists: {item_id}")
+        return
+
+    day = now.strftime("%Y-%m-%d")
+    dir_name = f"{day}-{_slug(title)}-{h}"
+    entry_dir = ROOT / "sources" / source / dir_name
+    entry_dir.mkdir(parents=True, exist_ok=True)
+
+    (entry_dir / "article.md").write_text(
+        f"# {title}\n\n"
+        f"- Source: {url}\n"
+        f"- Captured at: {now.isoformat()}\n\n"
+        f"## Content\n\n{body}\n",
+        encoding="utf-8",
+    )
+    (entry_dir / "raw.txt").write_text(raw, encoding="utf-8")
+    (entry_dir / "summary.md").write_text(f"# 摘要\n\n{summary}\n", encoding="utf-8")
+    (entry_dir / "tags.json").write_text(
+        json.dumps(
+            {
+                "url": url,
+                "title": title,
+                "tags": tags,
+                "source": source,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    rec = {
+        "id": item_id,
+        "source": source,
+        "title": title,
+        "url": url,
+        "captured_at": now.isoformat(),
+        "tags": tags,
+        "summary": summary,
+        "path": str((Path("sources") / source / dir_name / "article.md").as_posix()),
+    }
+    with MANIFEST.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    print(f"added: {item_id}")
+    print(f"path: {entry_dir}")
+    print(f"tags: {', '.join(tags)}")
+
 
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("search")
+    s = sub.add_parser("search", help="Search manifest")
     s.add_argument("query", nargs="?", default="")
     s.add_argument("--tag", default="")
+
+    a = sub.add_parser("add", help="Add URL into KB")
+    a.add_argument("url")
+    a.add_argument("--tags", default="", help="extra tags, comma-separated")
+    a.add_argument("--title", default="", help="override title")
 
     args = p.parse_args()
     if args.cmd == "search":
         search(args.query, args.tag or None)
+    elif args.cmd == "add":
+        add_url(args.url, tags_arg=args.tags, title_arg=args.title)
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
