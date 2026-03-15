@@ -77,6 +77,29 @@ def _fetch_via_jina(url: str) -> str:
         return r.read().decode("utf-8", errors="ignore")
 
 
+def _read_x_cookie() -> str:
+    p = Path.home() / ".config" / "kb" / "x_cookie.txt"
+    if p.exists():
+        return p.read_text(encoding="utf-8", errors="ignore").strip()
+    return ""
+
+
+def _fetch_x_auth_html(url: str) -> str:
+    cookie = _read_x_cookie()
+    if not cookie:
+        return ""
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Cookie": cookie,
+            "Referer": "https://x.com/",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read().decode("utf-8", errors="ignore")
+
+
 def _guess_source(url: str) -> str:
     netloc = urllib.parse.urlparse(url).netloc.lower()
     if "x.com" in netloc or "twitter.com" in netloc:
@@ -92,6 +115,78 @@ def _extract_title(text: str, fallback: str) -> str:
 def _extract_body(text: str) -> str:
     m = re.search(r"Markdown Content:\n(.*)$", text, re.DOTALL)
     return (m.group(1).strip() if m else text.strip())
+
+
+def _extract_x_image_urls(raw: str, body: str):
+    urls = []
+
+    # direct pbs.twimg links
+    for u in re.findall(r"https://pbs\.twimg\.com/media/[^\s\)\]]+", raw + "\n" + body):
+        u = u.strip()
+        if u not in urls:
+            urls.append(u)
+
+    # x.com/.../media/<id> links -> construct pbs link
+    for media_id in re.findall(r"/media/(\d+)", raw + "\n" + body):
+        cand = f"https://pbs.twimg.com/media/{media_id}?format=jpg&name=orig"
+        if cand not in urls:
+            urls.append(cand)
+
+    return urls
+
+
+def _download_assets(image_urls, assets_dir: Path):
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    saved = []
+    seen_keys = set()
+
+    for i, u in enumerate(image_urls, 1):
+        base = u.split("?")[0]
+        ext = "jpg"
+        m = re.search(r"format=([a-zA-Z0-9]+)", u)
+        if m:
+            ext = m.group(1).lower()
+
+        attempts = [f"{base}?format={ext}&name=orig", u]
+        if ext != "jpg":
+            attempts.append(f"{base}?format=jpg&name=orig")
+
+        data = None
+        used = None
+        ctype = ""
+        for a in attempts:
+            try:
+                req = urllib.request.Request(a, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://x.com/"})
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    data = r.read()
+                    ctype = (r.headers.get("Content-Type") or "").lower()
+                if data and len(data) > 500:
+                    used = a
+                    break
+            except Exception:
+                continue
+
+        if not data or not used:
+            continue
+
+        real_ext = "jpg"
+        if "png" in ctype:
+            real_ext = "png"
+        elif "webp" in ctype:
+            real_ext = "webp"
+
+        key = (len(data), real_ext)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+
+        name = Path(base).name
+        fn = f"{name}.{real_ext}" if name else f"img_{i}.{real_ext}"
+        path = assets_dir / fn
+        path.write_bytes(data)
+        saved.append({"file": f"assets/{fn}", "source": used, "bytes": len(data), "content_type": ctype})
+
+    return saved
 
 
 def _summarize(body: str, max_len: int = 320) -> str:
@@ -164,6 +259,13 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
         return False
 
     raw = _fetch_via_jina(nurl)
+    auth_html = ""
+    if source == "x":
+        try:
+            auth_html = _fetch_x_auth_html(nurl)
+        except Exception:
+            auth_html = ""
+
     body = _extract_body(raw)
     title = title_arg.strip() or _extract_title(raw, fallback=nurl)
     summary = _summarize(body)
@@ -180,14 +282,28 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
     entry_dir = ROOT / "sources" / source / dir_name
     entry_dir.mkdir(parents=True, exist_ok=True)
 
+    image_section = ""
+    image_meta = {"images": []}
+    if source == "x":
+        image_urls = _extract_x_image_urls(raw, body)
+        saved = _download_assets(image_urls, entry_dir / "assets")
+        if saved:
+            image_meta = {"images": saved}
+            lines = ["## Images (archived)", ""] + [f"![]({s['file']})\n" for s in saved]
+            image_section = "\n" + "\n".join(lines)
+
     (entry_dir / "article.md").write_text(
         f"# {title}\n\n"
         f"- Source: {nurl}\n"
         f"- Captured at: {now.isoformat()}\n\n"
-        f"## Content\n\n{body}\n",
+        f"## Content\n\n{body}\n"
+        f"{image_section}",
         encoding="utf-8",
     )
     (entry_dir / "raw.txt").write_text(raw, encoding="utf-8")
+    if auth_html:
+        (entry_dir / "raw-auth.html").write_text(auth_html, encoding="utf-8")
+    (entry_dir / "meta-images.json").write_text(json.dumps(image_meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (entry_dir / "summary.md").write_text(f"# 摘要\n\n{summary}\n", encoding="utf-8")
     (entry_dir / "tags.json").write_text(
         json.dumps({"url": nurl, "title": title, "tags": tags, "source": source}, ensure_ascii=False, indent=2) + "\n",
@@ -211,6 +327,8 @@ def add_url(url: str, tags_arg: str = "", title_arg: str = ""):
     print(f"added: {item_id}")
     print(f"path: {entry_dir}")
     print(f"tags: {', '.join(tags)}")
+    if source == "x":
+        print(f"images: {len(image_meta.get('images', []))}")
     return True
 
 
