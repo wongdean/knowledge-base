@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Hygiene"
+  short_description: "Suggest /compact only on clear topic switches."
+  default_prompt: "Use $context-hygiene to decide whether to suggest /compact for this conversation."

@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.12",
+    "lastTouchedAt": "2026-03-14T08:30:39.608Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-13T14:02:20.780Z",
+    "lastRunVersion": "2026.3.12",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "openai-codex:default": {
+        "provider": "openai-codex",
+        "mode": "oauth"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai-codex/gpt-5.3-codex"
+      },
+      "models": {
+        "openai-codex/gpt-5.3-codex": {}
+      },
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 2
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "pairing",
+      "botToken": "<REDACTED>",
+      "groups": {
+        "-1003791520465": {
+          "requireMention": false
+        }
+      },
+      "groupAllowFrom": [
+        514062219
+      ],
+      "groupPolicy": "allowlist",
+      "streaming": "partial"
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "controlUi": {
+      "enabled": false
+    },
+    "auth": {
+      "mode": "token",
+      "token": "<REDACTED>"
+    }
+  },
+  "skills": {
+    "entries": {
+      "tavily-search": {
+        "enabled": true,
+        "apiKey": "<REDACTED>"
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true
+      },
+      "memos-cloud-openclaw-plugin": {
+        "enabled": true,
+        "config": {
+          "apiKey": "<REDACTED>",
+          "recallEnabled": true,
+          "addEnabled": true
+        }
+      }
+    },
+    "installs": {
+      "memos-cloud-openclaw-plugin": {
+        "source": "npm",
+        "spec": "@memtensor/memos-cloud-openclaw-plugin@latest",
+        "installPath": "/home/coco/.openclaw/extensions/memos-cloud-openclaw-plugin",
+        "version": "0.1.9",
+        "resolvedName": "@memtensor/memos-cloud-openclaw-plugin",
+        "resolvedVersion": "0.1.9",
+        "resolvedSpec": "@memtensor/memos-cloud-openclaw-plugin@0.1.9",
+        "integrity": "sha512-4Qm1HutCS6345alpWwhGZ10SMRaRkFp4WCrXkEFaGh2DjCjV/3CmY+j+t/wmHkII7fomefAKTyjXN3r57zteKQ==",
+        "shasum": "e23ac1f87374350035706778dd3373af5da6b7bc",
+        "resolvedAt": "2026-03-14T08:30:39.125Z",
+        "installedAt": "2026-03-14T08:30:39.563Z"
+      }
+    }
+  }
+}

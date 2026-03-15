@@ -1,0 +1,1 @@
+30 4 * * * /home/coco/.npm-global/bin/openclaw gateway restart >> /tmp/openclaw/gateway-restart-cron.log 2>&1
