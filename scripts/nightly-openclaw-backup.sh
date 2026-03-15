@@ -86,6 +86,9 @@ for src,name in mem_sources:
     if src.is_dir():
         for p in src.rglob('*'):
             if p.is_file():
+                # only keep text-like memory artifacts for public backup
+                if p.suffix.lower() not in {'.md','.txt','.json','.jsonl','.yaml','.yml','.log'}:
+                    continue
                 rel=p.relative_to(src)
                 outp=OUT/name/rel
                 outp.parent.mkdir(parents=True,exist_ok=True)
