@@ -1,0 +1,3 @@
+# 摘要
+
+最近在X刷到了很多招 GTM Engineer 的帖子，阅读量很高，评论区人才很多，大家都很焦虑。 [![Image 1: Image](https://pbs.twimg.com/media/HDimL2PXAAEdS9C?format=png&name=small)](https://x.com/jenniekusu/article/2033575709378019542/media/2033557954226487297) 我看这是直接在昭告世界：GTM 不再是一个纯粹的销售和市场增长岗位，而是变成了一个和工程结合紧密的高需求融合岗位。 Google了一下现在市场上关于 GTM Engineer 在各种类型公司里的平均年薪，…
