@@ -2,7 +2,7 @@
 
 ## Conversation
 
-[![Image 1: Image](https://pbs.twimg.com/media/HEULfulb0AAWo1n?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037047046163910656)
+[![Image 1: Image](assets/1.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037047046163910656)
 
 这个 开源Skill，自动排版，发送到公众号草稿，不花一分钱
 
@@ -18,7 +18,7 @@
 
 我操，立马被搬运了，我自己的都发不出来
 
-[![Image 2: Image](https://pbs.twimg.com/media/G_pc3ZVaIAAyINh?format=jpg&name=small)](https://x.com/lxfater/status/2016025966431383779/photo/1)
+[![Image 2: Image](assets/2.jpg)](https://x.com/lxfater/status/2016025966431383779/photo/1)
 
 Quote
 
@@ -28,7 +28,7 @@ Quote
 
 Jan 27
 
-![Image 3: Article cover image](https://pbs.twimg.com/media/G_nbLsvbAAIaLwE?format=jpg&name=small)
+![Image 3: Article cover image](assets/3.jpg)
 
 送你保姆级的Clawdbot 的部署教程（免得在闲鱼买）
 
@@ -52,7 +52,7 @@ Jan 27
 
 @seekjourney
 
-![Image 4: Article cover image](https://pbs.twimg.com/media/HEENxCobAAACco8?format=jpg&name=small)
+![Image 4: Article cover image](assets/4.jpg)
 
 我把公众号排版Skill上架到了ClawHub
 
@@ -77,15 +77,15 @@ markdown
 
 但是为了是能够自动将草稿发送到微信公众号，我们还需要下面的两个密钥：
 
-[![Image 5: Image](https://pbs.twimg.com/media/HEUIeptaYAEF5ft?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037043729140441089)
+[![Image 5: Image](assets/5.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037043729140441089)
 
 1. 转移到
 
-[![Image 6: Image](https://pbs.twimg.com/media/HEUIw7-bAAA1FlO?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037044043281268736)
+[![Image 6: Image](assets/6.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037044043281268736)
 
 2. 登陆后按照下面步骤获取变量
 
-[![Image 7: Image](https://pbs.twimg.com/media/HEUI1kPawAAjCYD?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037044122809450496)
+[![Image 7: Image](assets/7.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037044122809450496)
 
 如何配置这两个变量呢？ 一句话 WECHAT APPID：xxx，WECHAT_SECRET：xx，帮我配置一下。 AI 就自动弄好了
 
@@ -95,15 +95,15 @@ markdown
 
 下面显示如何操作
 
-[![Image 8: Image](https://pbs.twimg.com/media/HEUI6BhbYAAnk6q?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037044199389093888)
+[![Image 8: Image](assets/8.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037044199389093888)
 
 最后，成功推送文章草稿
 
-[![Image 9: Image](https://pbs.twimg.com/media/HEUI-9AbAAAeB7f?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037044284076261376)
+[![Image 9: Image](assets/9.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037044284076261376)
 
 这个时候进去，改改标题，改改封面就能发布，给大家看看效果
 
-[![Image 10: Image](https://pbs.twimg.com/media/HEUJBYabYAIMYLG?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037044325792833538)
+[![Image 10: Image](assets/10.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037044325792833538)
 
 这套流程是我目前用得最好的流程，不需要安装各种环境，成功率极高。
 
@@ -111,4 +111,4 @@ markdown
 
 也可以关注我的公众号，我会分享更多类似的内容。 里面也有 AI 社群。
 
-[![Image 11: Image](https://pbs.twimg.com/media/HEUJZp-asAAgZBQ?format=jpg&name=small)](https://x.com/lxfater/article/2037047059384328315/media/2037044742824046592)
+[![Image 11: Image](assets/11.jpg)](https://x.com/lxfater/article/2037047059384328315/media/2037044742824046592)
