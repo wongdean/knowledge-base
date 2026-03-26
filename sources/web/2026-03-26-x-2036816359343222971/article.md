@@ -2,7 +2,7 @@
 
 ## Conversation
 
-[![Image 1: Image](https://pbs.twimg.com/media/HEQ5acLb0AA-Htm?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036816057881841664)
+[![Image 1: Image](assets/1.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036816057881841664)
 
 00 后双非电商专业毕业，每周 4 场 AI 沙龙，我的能力从何而来？
 
@@ -48,21 +48,21 @@
 
 这个插件支持一键导入一个油管博主的全部视频逐字稿到 NotebookLM 知识库，你可以把它理解为国内的 Get 笔记。导入后就能在知识库里对这个博主的全部视频进行提问，适合研究对标博主的整套内容体系。你也可以基于关键词搜索后依次导入，适合研究某个领域的优质内容。使用方法很简单，直接安装插件配置好即可。
 
-[![Image 2: Image](https://pbs.twimg.com/media/HEQxdFHaEAA3iDI?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036807307137519616)
+[![Image 2: Image](assets/2.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036807307137519616)
 
 推特 / 公众号 / 网页 → Obsidian 剪藏助手
 
 推特长文、公众号文章、普通网页，都可以一键剪藏为本地 Markdown。你还可以搭建 RPA 程序进行批量剪藏——比如我要分析飞书的开发案例，搭建好 RPA 后把电脑放在那，它就能自己工作了。
 
-[![Image 3: Image](https://pbs.twimg.com/media/HEQxkoNbEAAa9_I?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036807436817076224)
+[![Image 3: Image](assets/3.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036807436817076224)
 
-[![Image 4: Image](https://pbs.twimg.com/media/HEQ1JFcaIAAkLB2?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036811361674731520)
+[![Image 4: Image](assets/4.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036811361674731520)
 
 飞书文档 → Cloud Document Converter
 
 飞书文章容易被设置权限，Obsidian 剪藏助手搞不定。这个插件能帮你破除权限限制，直接以 Markdown 形式保存到本地。
 
-[![Image 5: Image](https://pbs.twimg.com/media/HEQxozHaoAEtGNy?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036807508464148481)
+[![Image 5: Image](assets/5.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036807508464148481)
 
 基本上这三个插件就能解决所有网页文档的剪藏。
 
@@ -70,9 +70,9 @@
 
 链接提取： B 站长视频、小宇宙播客等，直接把链接发给 Get 笔记，就能提取全部逐字稿。抖音也一样，Get 笔记支持一键提取抖音博主全部逐字稿，但都是在线的。我用 Claude Code 做了一个 app，支持一键将抖音博主全部视频的逐字稿导入本地。
 
-[![Image 6: Image](https://pbs.twimg.com/media/HEQx8YmakAAxHE-?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036807844943794176)
+[![Image 6: Image](assets/6.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036807844943794176)
 
-[![Image 7: Image](https://pbs.twimg.com/media/HEQyF1faYAAyRSo?format=png&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036808007317872640)
+[![Image 7: Image](assets/7.png)](https://x.com/longdechen12/article/2036816359343222971/media/2036808007317872640)
 
 文件提取： 有些视频没有链接，或者链接不支持直接提取。最简单的方法是先用下载狗、GreenVideo 等工具把视频下载下来，再上传到通义听悟进行逐字提取。这是底层通用方案——所有视频归根结底都是文件，只要有源文件，一定能提取出来。
 
@@ -106,7 +106,7 @@
 
 我还增加了一个要求：不只是在线提问，而是把问题和答案以本地文件的形式保存下来，方便以后直接做成知识库。
 
-[![Image 8: Image](https://pbs.twimg.com/media/HEQ4L2NacAAv3JE?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036814707659796480)
+[![Image 8: Image](assets/8.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036814707659796480)
 
 为什么不直接用 Claude Code 读文档？
 
@@ -134,7 +134,7 @@
 
 最后手搓 Keynote 幻灯片。
 
-[![Image 9: Image](https://pbs.twimg.com/media/HEQ0qOoawAE1LBu?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036810831565078529)
+[![Image 9: Image](assets/9.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036810831565078529)
 
 为什么用 Keynote？因为它够简单，比 PowerPoint 好用多了。 我一直有个观点：如果你觉得 NotebookLM 生成的幻灯片好的话，要么你压根不懂表达，要么你只用过 PowerPoint。
 
@@ -150,6 +150,6 @@
 
 这篇内容就是基于我 Xmind → 口播逐字稿的方法论写出来的。有些环节由于篇幅原因没有最细化，大家可以在评论区反馈：哪里写得好，哪里没写全，方便我以后做更详细的分享。
 
-[![Image 10: Image](https://pbs.twimg.com/media/HEQzhIRbEAAHw7t?format=jpg&name=small)](https://x.com/longdechen12/article/2036816359343222971/media/2036809575727566848)
+[![Image 10: Image](assets/10.jpg)](https://x.com/longdechen12/article/2036816359343222971/media/2036809575727566848)
 
 我是观自，00 后，一个农村小伙，AI 领域的创业者，刚来到推特。 专注于 AI 赋能培训与 AI 自动化运营系统定制。 阅读过程中对于 AI 有任何问题，或者有插件方面的需求，都可以联系我。
