@@ -1,0 +1,6 @@
+{
+  "createdAt": "20260502_032001",
+  "format": "tar.gz + openssl aes-256-cbc pbkdf2",
+  "encryptedFile": "openclaw-secure-20260502_032001.tar.gz.enc",
+  "notes": "Contains sensitive restore artifacts. Keep passphrase private."
+}
